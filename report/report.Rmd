@@ -1,0 +1,102 @@
+---
+title: "Chernobyl Radiation: Country-Level Exposure and Health Outcomes"
+author: "Gabriel"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.align = "center")
+library(here)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(knitr)
+library(kableExtra)
+```
+
+## Background
+
+The Chernobyl nuclear accident in April 1986 was the worst nuclear disaster in history. The explosion at Reactor No. 4 sent a large plume of radioactive material across Europe, with contamination levels varying a lot depending on wind patterns and distance from the plant. This report looks at radiation data from several European countries to see how contamination changed over time and what the health outcomes looked like.
+
+The three main radionuclides I focused on are Cesium-137 (30-year half-life, the main long-term concern), Iodine-131 (8-day half-life, main cause of thyroid cancer risk in the short term), and Strontium-90 (29-year half-life, concentrates in bone).
+
+---
+
+## Data
+
+```{r load-data}
+dat <- readRDS(here("data/processed/chernobyl_clean.rds"))
+```
+
+The dataset comes from Kaggle and has country-level radiation measurements and health statistics for `r n_distinct(dat$country)` countries across several time points from 1986 to 2016. I cleaned the data in `code/00_clean_data.R`.
+
+---
+
+## Summary Table
+
+Table 1 shows average radiation exposure and health outcomes by region at the time of the accident (1986).
+
+```{r table1}
+tbl1 <- readRDS(here("output/tables/table1_summary.rds"))
+
+tbl1 %>%
+  kable(caption = "Table 1. Radiation exposure and health outcomes by region, 1986",
+        format.args = list(big.mark = ",")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE) %>%
+  column_spec(1, bold = TRUE)
+```
+
+Eastern Europe had much higher contamination and worse health outcomes compared to Western and Northern Europe, which makes sense given their proximity to Chernobyl.
+
+---
+
+## Cesium-137 Over Time
+
+Figure 1 shows how Cs-137 levels changed from 1986 to 2016 for countries with data at multiple time points.
+
+```{r figure1, fig.cap="Figure 1. Cs-137 levels declined over time in all countries, but Ukraine and Belarus remain far above the others.", fig.width=9, fig.height=5}
+longitudinal <- dat %>%
+  group_by(country) %>%
+  filter(n() >= 3) %>%
+  ungroup()
+
+ggplot(longitudinal, aes(x = year, y = cesium_137_bq_m2,
+                          color = country, group = country)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 2.5) +
+  scale_y_continuous(labels = comma) +
+  scale_x_continuous(breaks = c(1986, 1990, 1996, 2006, 2016)) +
+  scale_color_brewer(palette = "Set2") +
+  labs(
+    title = "Cesium-137 Contamination Levels Over Time",
+    subtitle = "Selected countries, 1986-2016",
+    x = "Year",
+    y = "Cs-137 Activity (Bq/m2)",
+    color = "Country",
+    caption = "Source: Chernobyl radiation dataset (Kaggle)"
+  ) +
+  theme_bw(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+---
+
+## Findings
+
+The data shows a clear pattern where countries closer to Chernobyl had much higher initial contamination and higher cancer rates. Ukraine and Belarus had Cs-137 levels 5-10 times higher than Western European countries in 1986. By 2016 levels had dropped across the board due to radioactive decay, but Ukraine and Belarus still had elevated contamination.
+
+Thyroid cancer rates went up over time in Eastern Europe, which is consistent with I-131 exposure in the early period after the accident. Western European countries showed much smaller increases.
+
+---
+
+## Conclusion
+
+Distance from Chernobyl was the strongest predictor of contamination and health impact. While Cs-137 levels have dropped significantly over 30 years, the most affected countries are still dealing with elevated radiation and ongoing health consequences. Long-term monitoring of these populations is important.
