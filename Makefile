@@ -11,7 +11,7 @@ all: report
 
 # --- Install R packages (run once) -------------------------------------------
 install:
-	Rscript install_packages.R
+		Rscript -e "renv::restore(prompt = FALSE)"
 
 # --- Final report ------------------------------------------------------------
 report: output/report.html
